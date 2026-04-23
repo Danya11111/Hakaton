@@ -30,7 +30,8 @@
 ## Продуктовые заметки
 
 - Публичный MVP: маршруты `/`, `/groups/[slug]`, `/companies/[slug]`.
-- Админка: `/admin` (логин `ADMIN_USERNAME` / `ADMIN_PASSWORD`, сессия в httpOnly cookie, секрет `ADMIN_SESSION_SECRET` ≥ 32 символов).
-- Прод: `docker-compose.prod.yml`, Caddy (`ops/Caddyfile`), домен по умолчанию `arhipovdan.ru`, сервер по умолчанию `83.220.174.217` (см. README).
+- Админка: `/admin` (логин `ADMIN_USERNAME` / `ADMIN_PASSWORD`, сессия в httpOnly cookie, секрет `ADMIN_SESSION_SECRET` ≥ 32 символов, опционально `ADMIN_SESSION_TTL_HOURS`), CSRF для мутаций, ограничение частоты неудачных логинов, журнал аудита `/admin/audit`.
+- Импорт Excel: только через предпросмотр + применение (см. `/admin/import-export`), не через сырые POST без проверки.
+- Прод: `docker-compose.prod.yml`, Caddy (`ops/Caddyfile`), домен по умолчанию `arhipovdan.ru`, сервер по умолчанию `83.220.174.217` (см. README и `ops/BOOTSTRAP.md`).
 
 Соблюдение этого документа обязательно для всех последующих задач в репозитории.

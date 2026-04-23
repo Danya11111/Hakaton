@@ -22,6 +22,12 @@ echo ">>> Build & up ($COMPOSE_FILE)"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
 
+echo ">>> Prisma migrate deploy (app container)"
+if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T app npx prisma migrate deploy; then
+  echo "ERROR: prisma migrate deploy failed"
+  exit 1
+fi
+
 echo ">>> Health check"
 for i in $(seq 1 30); do
   if curl -fsS "https://${DOMAIN}/api/health" >/dev/null 2>&1; then
@@ -33,5 +39,5 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-echo "WARN: health check failed after wait (TLS/DNS may still be propagating)"
-exit 0
+echo "ERROR: health check failed after wait (TLS/DNS may still be propagating)"
+exit 1

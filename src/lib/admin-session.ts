@@ -9,11 +9,23 @@ function getSecret() {
   return new TextEncoder().encode(raw);
 }
 
+export function getAdminSessionTtlHours(): number {
+  const raw = process.env.ADMIN_SESSION_TTL_HOURS;
+  const n = raw === undefined || raw === "" ? 8 : Number(raw);
+  if (!Number.isFinite(n)) return 8;
+  return Math.min(720, Math.max(1, Math.floor(n)));
+}
+
+export function getAdminSessionMaxAgeSeconds(): number {
+  return getAdminSessionTtlHours() * 60 * 60;
+}
+
 export async function createAdminSessionToken(): Promise<string> {
+  const hours = getAdminSessionTtlHours();
   return new SignJWT({ role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("8h")
+    .setExpirationTime(`${hours}h`)
     .sign(getSecret());
 }
 

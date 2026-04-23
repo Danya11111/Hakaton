@@ -4,8 +4,17 @@ node_modules
 dist
 .env
 .env.local
+.env.production
 .DS_Store
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Локальные справочные материалы и артефакты (не коммитить в git)
+/docs/
+/backups/
+*.sql.gz
+uploads/
+tmp/
+temp-import/

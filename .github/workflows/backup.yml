@@ -1,0 +1,25 @@
+# Опциональный ручной бэкап БД на сервере по SSH.
+# Требуются секреты: SSH_HOST, SSH_USER, SSH_KEY (и при необходимости SSH_PORT).
+# На сервере должен существовать каталог приложения и скрипт scripts/backup-db.sh.
+
+name: Backup database
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run remote backup script
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd "${APP_DIR:-/opt/arhipovdan/app}"
+            mkdir -p /opt/arhipovdan/backups
+            BACKUP_DIR=/opt/arhipovdan/backups APP_DIR="$PWD" ./scripts/backup-db.sh
+            ls -la /opt/arhipovdan/backups | tail -n 5

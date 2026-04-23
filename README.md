@@ -79,21 +79,46 @@ npx prisma studio           # GUI для данных
 
 Публичные маршруты не меняются. Дополнительно:
 
-- `/admin/login` — вход (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, cookie-сессия с подписью `ADMIN_SESSION_SECRET`, минимум 32 символа).
-- `/admin` — дашборд, `/admin/companies` — CRUD компаний и локаций, `/admin/import-export` — импорт/экспорт `.xlsx`.
-- API (защищены тем же cookie + middleware):
-  - `GET /api/admin/export/companies` — выгрузка справочника;
-  - `GET /api/admin/export/template` — пустой шаблон;
-  - `POST /api/admin/import/companies` — импорт (`multipart/form-data`: поле `file`, поле `mode`: `merge` | `replace_companies`).
+- `/admin/login` — вход (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, httpOnly cookie-сессия с подписью `ADMIN_SESSION_SECRET` ≥ 32 символов; `ADMIN_SESSION_TTL_HOURS` — срок сессии в часах).
+- `/admin` — дашборд (в т.ч. карточка `/api/health` и последние записи аудита).
+- `/admin/companies` — CRUD компаний и локаций (мутации защищены CSRF-токеном в cookie + скрытые поля).
+- `/admin/import-export` — **двухшаговый импорт**: предпросмотр без записи в БД → явное применение в **одной транзакции**; режимы `merge` и `replace_companies`; только `.xlsx`, лимит размера см. `MAX_IMPORT_BYTES` в `src/lib/excel/import-build-preview.ts`.
+- `/admin/audit` — журнал действий (логин/логаут, CRUD, импорт/экспорт).
+- API (защищены cookie + middleware):
+  - `GET /api/admin/export/companies` — выгрузка справочника (с записью в аудит);
+  - `GET /api/admin/export/template` — пустой шаблон (с записью в аудит);
+  - `POST /api/admin/session/bootstrap` — выдача CSRF-cookie для старых сессий (после обновления).
 - `GET /api/health` — health-check для деплоя (без авторизации).
 
 Локации хранятся в `CompanyLocation`; поля `Company.totalAreaSqM` и `Company.locationCount` **пересчитываются автоматически** после сохранения компании в админке или импорта.
 
+**Исходные Excel/Word справочники** держите локально вне репозитория (каталог `docs/` и маски в `.gitignore`), чтобы не раздувать git.
+
 Подробный операционный цикл (коммит, push, деплой) описан в `AGENTS.md`.
+
+## Резервное копирование и восстановление
+
+Скрипты (bash, `set -euo pipefail`):
+
+- `scripts/backup-db.sh` — `pg_dump` из контейнера `postgres`, результат `backups/tinao-*.sql.gz` (или `BACKUP_DIR`).
+- `scripts/restore-db.sh` — восстановление из выбранного `.sql.gz` (интерактивное подтверждение; для CI можно `FORCE=1`).
+- `scripts/check-health.sh` — опрос `GET /api/health` с повторами.
+
+На продакшен-сервере рекомендуется хранить дампы **вне** каталога git, например `/opt/arhipovdan/backups`.
+
+После восстановления: поднимите контейнеры и проверьте приложение:
+
+```bash
+BASE_URL=https://arhipovdan.ru ./scripts/check-health.sh
+```
+
+Опциональный workflow GitHub Actions: `.github/workflows/backup.yml` (`workflow_dispatch`, нужны SSH-секреты).
 
 ## Продакшен (Docker + Caddy)
 
 Файлы: `docker-compose.prod.yml`, `ops/Caddyfile`, `docker-entrypoint.prod.sh` (миграции без seed; seed — `RUN_SEED_ON_DEPLOY=1`).
+
+Первичная подготовка сервера: **`ops/BOOTSTRAP.md`** и краткий чеклист `ops/bootstrap-server.sh`.
 
 1. На сервере (по умолчанию `83.220.174.217`, домен `arhipovdan.ru`) один раз клонировать репозиторий, например в `/opt/arhipovdan/app`.
 2. Создать `.env.production` по образцу `.env.production.example` (пароли, `ADMIN_*`, `DOMAIN`).
@@ -131,6 +156,6 @@ Workflow: `.github/workflows/deploy.yml` (push в `main` или `workflow_dispat
 
 ## Что дальше
 
-- Роли и аудит действий в админке.
+- Роли и разграничение прав в админке.
 - Версионирование методики и diff шаблонов.
 - Автотесты API импорта/экспорта.

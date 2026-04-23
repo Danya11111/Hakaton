@@ -74,3 +74,41 @@ model Evaluation {
 
   @@index([companyId])
 }
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  actorUsername  String
+  action         String
+  entityType     String
+  entityId       String?
+  entityLabel    String?
+  metadataJson   Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ImportPreview {
+  id        String   @id @default(cuid())
+  mode      String
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  username  String
+  ipAddress String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([username, createdAt])
+  @@index([ipAddress, createdAt])
+}

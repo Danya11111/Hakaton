@@ -52,12 +52,14 @@ function rawToForm(raw: unknown): Record<string, string> {
 }
 
 export function AdminEvaluationsPanel({
+  csrf,
   companyId,
   companySlug,
   groupCode,
   areaSqM,
   evaluations,
 }: {
+  csrf: string;
   companyId: string;
   companySlug: string;
   groupCode: string;
@@ -90,8 +92,13 @@ export function AdminEvaluationsPanel({
   }
 
   function save() {
+    if (!csrf) {
+      toast.error("Защита формы не готова. Обновите страницу.");
+      return;
+    }
     startTransition(async () => {
       const res = await saveEvaluationAdmin({
+        csrf,
         id: editingId,
         companyId,
         companySlug,
@@ -111,8 +118,12 @@ export function AdminEvaluationsPanel({
 
   function confirmDelete() {
     if (!deleteId) return;
+    if (!csrf) {
+      toast.error("Защита формы не готова. Обновите страницу.");
+      return;
+    }
     startTransition(async () => {
-      const res = await deleteEvaluationAdmin({ id: deleteId, companyId, companySlug });
+      const res = await deleteEvaluationAdmin({ csrf, id: deleteId, companyId, companySlug });
       if (!res.ok) {
         toast.error(res.message ?? "Ошибка");
         return;

@@ -1,8 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { writeAudit } from "@/lib/audit/write-audit";
+import { getActorUsername } from "@/lib/actor";
 import { syncCompanyLocationAggregates } from "@/lib/company-aggregate";
+import { getClientIp, getUserAgent } from "@/lib/request-meta";
+import { verifyAdminCsrfToken } from "@/lib/security/csrf";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const locationRowSchema = z.object({
@@ -26,21 +31,34 @@ const companyMetaSchema = z.object({
 export type CompanySaveState = { ok: boolean; message?: string; id?: string };
 
 export async function saveCompanyAdmin(input: {
+  csrf: string;
   id?: string;
   meta: z.infer<typeof companyMetaSchema>;
   locations: z.infer<typeof locationRowSchema>[];
 }): Promise<CompanySaveState> {
+  if (!(await verifyAdminCsrfToken(input.csrf))) {
+    return { ok: false, message: "Сессия устарела. Обновите страницу и войдите снова." };
+  }
   const meta = companyMetaSchema.safeParse(input.meta);
   if (!meta.success) {
-    return { ok: false, message: meta.error.errors[0]?.message ?? "Ошибка данных компании." };
+    const issue = meta.error.issues[0];
+    const path = issue?.path?.length ? String(issue.path[0]) : "данные";
+    return { ok: false, message: `${path}: ${issue?.message ?? "Ошибка данных компании."}` };
   }
   const locs = z.array(locationRowSchema).safeParse(input.locations);
   if (!locs.success) {
-    return { ok: false, message: locs.error.errors[0]?.message ?? "Ошибка в локациях." };
+    const issue = locs.error.issues[0];
+    const path = issue?.path?.length ? `локация ${Number(issue.path[0]) + 1}` : "локации";
+    return { ok: false, message: `${path}: ${issue?.message ?? "Ошибка в локациях."}` };
   }
   if (!locs.data.some((l) => l.areaSqM > 0)) {
     return { ok: false, message: "Нужна хотя бы одна локация с площадью больше нуля." };
   }
+
+  const h = await headers();
+  const actor = await getActorUsername();
+  const ip = getClientIp(h);
+  const ua = getUserAgent(h);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -106,6 +124,17 @@ export async function saveCompanyAdmin(input: {
       return { companyId, companySlug };
     });
 
+    await writeAudit({
+      actorUsername: actor,
+      action: input.meta.id ? "company_update" : "company_create",
+      entityType: "company",
+      entityId: result.companyId,
+      entityLabel: meta.data.name,
+      metadata: { slug: result.companySlug, locations: locs.data.length },
+      ipAddress: ip,
+      userAgent: ua,
+    });
+
     revalidatePath("/admin/companies");
     revalidatePath(`/admin/companies/${result.companyId}`);
     revalidatePath(`/companies/${result.companySlug}`);
@@ -116,10 +145,33 @@ export async function saveCompanyAdmin(input: {
   }
 }
 
-export async function deleteCompanyAdmin(id: string): Promise<{ ok: boolean; message?: string }> {
-  const c = await prisma.company.findUnique({ where: { id }, select: { slug: true } });
+export async function deleteCompanyAdmin(input: {
+  csrf: string;
+  id: string;
+}): Promise<{ ok: boolean; message?: string }> {
+  if (!(await verifyAdminCsrfToken(input.csrf))) {
+    return { ok: false, message: "Сессия устарела. Обновите страницу и войдите снова." };
+  }
+  const h = await headers();
+  const actor = await getActorUsername();
+  const ip = getClientIp(h);
+  const ua = getUserAgent(h);
+
+  const c = await prisma.company.findUnique({ where: { id: input.id }, select: { slug: true, name: true } });
   if (!c) return { ok: false, message: "Не найдено." };
-  await prisma.company.delete({ where: { id } });
+  await prisma.company.delete({ where: { id: input.id } });
+
+  await writeAudit({
+    actorUsername: actor,
+    action: "company_delete",
+    entityType: "company",
+    entityId: input.id,
+    entityLabel: c.name,
+    metadata: { slug: c.slug },
+    ipAddress: ip,
+    userAgent: ua,
+  });
+
   revalidatePath("/admin/companies");
   revalidatePath(`/companies/${c.slug}`);
   revalidatePath("/");

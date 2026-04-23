@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function AdminLoginForm({ configError }: { configError?: boolean }) {
+export function AdminLoginForm({ configError, csrfHint }: { configError?: boolean; csrfHint?: boolean }) {
   const [state, formAction, pending] = useActionState(adminLogin, {} as LoginState);
 
   return (
@@ -20,6 +20,11 @@ export function AdminLoginForm({ configError }: { configError?: boolean }) {
         {configError ? (
           <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
             Не настроен ADMIN_SESSION_SECRET (≥32 символов). Обратитесь к администратору сервера.
+          </p>
+        ) : null}
+        {csrfHint ? (
+          <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200">
+            Проверка CSRF не прошла (например, устарела вкладка). Войдите снова.
           </p>
         ) : null}
         <form action={formAction} className="space-y-4">

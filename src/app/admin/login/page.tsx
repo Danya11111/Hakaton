@@ -8,7 +8,10 @@ export default async function AdminLoginPage({
   const sp = await searchParams;
   return (
     <div className="mx-auto max-w-xl px-4">
-      <AdminLoginForm configError={sp.error === "config"} />
+      <AdminLoginForm
+        configError={sp.error === "config"}
+        csrfHint={sp.error === "csrf"}
+      />
     </div>
   );
 }

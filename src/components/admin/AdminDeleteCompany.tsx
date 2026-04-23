@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { deleteCompanyAdmin } from "@/actions/admin/companies";
+import { useAdminCsrf } from "@/components/admin/AdminCsrfContext";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -16,13 +17,18 @@ import {
 import { Button } from "@/components/ui/button";
 
 export function AdminDeleteCompany({ id, name }: { id: string; name: string }) {
+  const csrf = useAdminCsrf();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   function runDelete() {
+    if (!csrf) {
+      toast.error("Защита формы не готова. Обновите страницу.");
+      return;
+    }
     startTransition(async () => {
-      const res = await deleteCompanyAdmin(id);
+      const res = await deleteCompanyAdmin({ id, csrf });
       if (!res.ok) {
         toast.error(res.message ?? "Ошибка");
         return;

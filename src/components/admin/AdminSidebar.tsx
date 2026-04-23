@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { Building2, Home, LogOut, Upload } from "lucide-react";
-import { adminLogout } from "@/actions/admin/auth";
-import { Button } from "@/components/ui/button";
+import { Building2, ClipboardList, Home, Upload } from "lucide-react";
+import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/admin", label: "Обзор", icon: Home },
   { href: "/admin/companies", label: "Компании", icon: Building2 },
   { href: "/admin/import-export", label: "Импорт / экспорт", icon: Upload },
+  { href: "/admin/audit", label: "Аудит", icon: ClipboardList },
 ];
 
 export function AdminSidebar({ currentPath }: { currentPath: string }) {
@@ -35,12 +35,7 @@ export function AdminSidebar({ currentPath }: { currentPath: string }) {
           );
         })}
       </nav>
-      <form action={adminLogout}>
-        <Button type="submit" variant="outline" className="w-full justify-start gap-2">
-          <LogOut className="h-4 w-4" />
-          Выйти
-        </Button>
-      </form>
+      <AdminLogoutButton />
     </aside>
   );
 }

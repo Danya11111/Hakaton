@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveCompanyAdmin } from "@/actions/admin/companies";
+import { useAdminCsrf } from "@/components/admin/AdminCsrfContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -83,7 +84,9 @@ export function CompanyAdminForm({
   company: AdminCompanyPayload | null;
 }) {
   const router = useRouter();
+  const csrf = useAdminCsrf();
   const [pending, startTransition] = useTransition();
+  const [dirty, setDirty] = useState(false);
   const [groupId, setGroupId] = useState(company?.groupId ?? groups[0]?.id ?? "");
   const [name, setName] = useState(company?.name ?? "");
   const [shortName, setShortName] = useState(company?.shortName ?? "");
@@ -92,6 +95,16 @@ export function CompanyAdminForm({
   const [locations, setLocations] = useState<AdminLocationRow[]>(
     company?.locations?.length ? company.locations.map(locToRow) : [emptyRow()],
   );
+
+  useEffect(() => {
+    if (!dirty) return;
+    const fn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", fn);
+    return () => window.removeEventListener("beforeunload", fn);
+  }, [dirty]);
 
   const liveSummary = useMemo(() => {
     let area = 0;
@@ -106,16 +119,23 @@ export function CompanyAdminForm({
   }, [locations]);
 
   function setRow(index: number, patch: Partial<AdminLocationRow>) {
+    setDirty(true);
     setLocations((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
 
   function removeRow(index: number) {
+    setDirty(true);
     setLocations((rows) => rows.filter((_, i) => i !== index));
   }
 
   const handleSave = () => {
+    if (!csrf) {
+      toast.error("Защита формы не готова. Подождите секунду и обновите страницу.");
+      return;
+    }
     startTransition(async () => {
       const res = await saveCompanyAdmin({
+        csrf,
         id: company?.id,
         meta: {
           id: company?.id,
@@ -138,6 +158,7 @@ export function CompanyAdminForm({
         toast.error(res.message ?? "Ошибка");
         return;
       }
+      setDirty(false);
       toast.success("Сохранено");
       if (!company?.id && res.id) {
         router.push(`/admin/companies/${res.id}`);
@@ -155,6 +176,9 @@ export function CompanyAdminForm({
             {company ? "Редактирование компании" : "Новая компания"}
           </h1>
           <p className="text-sm text-slate-600">Площадь и число локаций пересчитываются автоматически после сохранения.</p>
+          {dirty ? (
+            <p className="text-sm font-medium text-amber-800">Есть несохранённые изменения — не закрывайте вкладку без сохранения.</p>
+          ) : null}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
@@ -203,7 +227,13 @@ export function CompanyAdminForm({
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label>Группа</Label>
-                <Select value={groupId} onValueChange={setGroupId}>
+                <Select
+                  value={groupId}
+                  onValueChange={(v) => {
+                    setDirty(true);
+                    setGroupId(v);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Выберите группу" />
                   </SelectTrigger>
@@ -219,19 +249,48 @@ export function CompanyAdminForm({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Название</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => {
+                      setDirty(true);
+                      setName(e.target.value);
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="shortName">Краткое название</Label>
-                  <Input id="shortName" value={shortName} onChange={(e) => setShortName(e.target.value)} />
+                  <Input
+                    id="shortName"
+                    value={shortName}
+                    onChange={(e) => {
+                      setDirty(true);
+                      setShortName(e.target.value);
+                    }}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug URL</Label>
-                <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="latin-kebab" />
+                <Input
+                  id="slug"
+                  value={slug}
+                  onChange={(e) => {
+                    setDirty(true);
+                    setSlug(e.target.value);
+                  }}
+                  placeholder="latin-kebab"
+                />
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox id="excel" checked={sourceOnly} onCheckedChange={(v) => setSourceOnly(v === true)} />
+                <Checkbox
+                  id="excel"
+                  checked={sourceOnly}
+                  onCheckedChange={(v) => {
+                    setDirty(true);
+                    setSourceOnly(v === true);
+                  }}
+                />
                 <Label htmlFor="excel">Только в сводном Excel</Label>
               </div>
             </CardContent>
@@ -244,7 +303,14 @@ export function CompanyAdminForm({
                 <CardTitle>Локации</CardTitle>
                 <CardDescription>Каждая строка — отдельная площадка. Пустые строки удалите перед сохранением.</CardDescription>
               </div>
-              <Button type="button" variant="secondary" onClick={() => setLocations((r) => [...r, emptyRow()])}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setDirty(true);
+                  setLocations((r) => [...r, emptyRow()]);
+                }}
+              >
                 Добавить строку
               </Button>
             </CardHeader>
@@ -290,6 +356,7 @@ export function CompanyAdminForm({
         {company ? (
           <TabsContent value="evaluations">
             <AdminEvaluationsPanel
+              csrf={csrf}
               companyId={company.id}
               companySlug={company.slug}
               groupCode={company.groupCode}
