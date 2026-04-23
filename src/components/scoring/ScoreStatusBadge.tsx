@@ -1,8 +1,38 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export function ScoreStatusBadge({ label }: { label: string }) {
-  const variant =
+type LightVariant = "success" | "default" | "warn" | "secondary";
+type OnDarkVariant = "statusOnDarkLeader" | "statusOnDarkGood" | "statusOnDarkMid" | "statusOnDarkLow";
+
+export function ScoreStatusBadge({
+  label,
+  tone = "default",
+}: {
+  label: string;
+  /** `onCardDark`: high-contrast light text on tinted glass for dark gradient cards. */
+  tone?: "default" | "onCardDark";
+}) {
+  if (tone === "onCardDark") {
+    const onDark: OnDarkVariant =
+      label === "Лидер"
+        ? "statusOnDarkLeader"
+        : label === "Выше среднего"
+          ? "statusOnDarkGood"
+          : label === "Средний уровень"
+            ? "statusOnDarkMid"
+            : "statusOnDarkLow";
+
+    return (
+      <Badge
+        variant={onDark}
+        className="px-3 py-1 text-xs font-semibold uppercase tracking-wide"
+      >
+        {label}
+      </Badge>
+    );
+  }
+
+  const variant: LightVariant =
     label === "Лидер"
       ? "success"
       : label === "Выше среднего"
@@ -13,7 +43,7 @@ export function ScoreStatusBadge({ label }: { label: string }) {
 
   return (
     <Badge
-      variant={variant as "success" | "default" | "warn" | "secondary"}
+      variant={variant}
       className={cn(
         "px-3 py-1 text-xs font-semibold uppercase tracking-wide",
         label === "Лидер" && "bg-emerald-600 text-white hover:bg-emerald-600",

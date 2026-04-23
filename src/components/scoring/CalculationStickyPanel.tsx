@@ -40,7 +40,7 @@ export function CalculationStickyPanel({
         <div className="relative space-y-3">
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs font-medium uppercase tracking-wide text-white/60">Интегральный балл</p>
-            {hasScore ? <ScoreStatusBadge label={statusLabel} /> : null}
+            {hasScore ? <ScoreStatusBadge label={statusLabel} tone="onCardDark" /> : null}
           </div>
           {hasScore ? (
             <div className="flex items-baseline gap-1.5">
