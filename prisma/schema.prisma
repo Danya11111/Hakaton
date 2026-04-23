@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  slug        String    @unique
+  title       String
+  unitType    String
+  description String
+  sortOrder   Int       @default(0)
+  companies   Company[]
+
+  @@index([slug])
+  @@index([code])
+}
+
+model Company {
+  id                String             @id @default(cuid())
+  groupId           String
+  group             Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  slug              String             @unique
+  name              String
+  shortName         String?
+  totalAreaSqM      Float
+  locationCount     Int
+  sourceOnlyInExcel Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  evaluations       Evaluation[]
+  locations         CompanyLocation[]
+
+  @@index([groupId])
+  @@index([slug])
+}
+
+model CompanyLocation {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title        String?
+  addressLine  String   @default("")
+  areaSqM      Float
+  locationType String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Evaluation {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  periodLabel        String
+  staffCount         Int
+  populationInZone   Int
+  integralScore      Float
+  statusLabel        String
+  resultScore        Float
+  efficiencyScore    Float
+  qualityScore       Float
+  rawPayloadJson     Json
+  breakdownJson      Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([companyId])
+}

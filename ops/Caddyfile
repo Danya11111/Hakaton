@@ -1,0 +1,13 @@
+{
+  # При необходимости укажите e-mail для Let's Encrypt:
+  # email you@example.com
+}
+
+{$CADDY_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy app:3000
+}
+
+www.{$CADDY_DOMAIN} {
+  redir https://{$CADDY_DOMAIN}{uri} permanent
+}

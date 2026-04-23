@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tinao
+      POSTGRES_PASSWORD: tinao
+      POSTGRES_DB: tinao
+    ports:
+      - "5432:5432"
+    volumes:
+      - tinao_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tinao -d tinao"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://tinao:tinao@postgres:5432/tinao?schema=public
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: tinao
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  tinao_pg:

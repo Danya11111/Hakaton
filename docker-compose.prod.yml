@@ -1,0 +1,67 @@
+name: arhipovdan
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tinao}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tinao}
+      POSTGRES_DB: ${POSTGRES_DB:-tinao}
+    volumes:
+      - arhipovdan_pg:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tinao} -d ${POSTGRES_DB:-tinao}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/entrypoint.prod.sh"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tinao}:${POSTGRES_PASSWORD:-tinao}@postgres:5432/${POSTGRES_DB:-tinao}?schema=public
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-tinao}
+      PGDATABASE: ${POSTGRES_DB:-tinao}
+      NODE_ENV: production
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_DOMAIN: ${DOMAIN:-arhipovdan.ru}
+    volumes:
+      - ./ops/Caddyfile:/etc/caddy/Caddyfile:ro
+      - arhipovdan_caddy_data:/data
+      - arhipovdan_caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  arhipovdan_pg:
+  arhipovdan_caddy_data:
+  arhipovdan_caddy_config:
