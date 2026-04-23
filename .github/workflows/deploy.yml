@@ -24,7 +24,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          # Пустой секрет ломает ssh-action; при отсутствии SSH_PORT используем 22
+          port: ${{ secrets.SSH_PORT != '' && secrets.SSH_PORT || 22 }}
           script_stop: true
           envs: APP_DIR,PROD_ENV_FILE,DOMAIN,COMPOSE_FILE
           script: |
