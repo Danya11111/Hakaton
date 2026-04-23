@@ -35,6 +35,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
       ADMIN_SESSION_TTL_HOURS: ${ADMIN_SESSION_TTL_HOURS:-8}
+      # Из .env.production при `docker compose --env-file …` (по умолчанию выключено)
+      RUN_SEED_ON_DEPLOY: ${RUN_SEED_ON_DEPLOY:-0}
+      RUN_BOOTSTRAP_IF_EMPTY: ${RUN_BOOTSTRAP_IF_EMPTY:-0}
     depends_on:
       postgres:
         condition: service_healthy

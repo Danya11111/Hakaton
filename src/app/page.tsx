@@ -29,7 +29,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild variant="gradient" size="lg" className="rounded-2xl px-6">
-                <Link href="/groups/dk">
+                <Link href="/groups">
                   Перейти к группам
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -44,7 +44,7 @@ export default async function HomePage() {
             <p className="mt-2 font-display text-4xl font-semibold">
               {groups.reduce((acc, g) => acc + g._count.companies, 0)}
             </p>
-            <p className="text-sm text-white/70">учреждений · 5 групп</p>
+            <p className="text-sm text-white/70">учреждений · групп в справочнике: {groups.length}</p>
           </div>
         </div>
       </section>

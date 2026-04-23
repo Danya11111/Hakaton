@@ -18,7 +18,7 @@ export function SiteHeader() {
           <Link className="transition hover:text-slate-900" href="/">
             Главная
           </Link>
-          <Link className="transition hover:text-slate-900" href="/groups/dk">
+          <Link className="transition hover:text-slate-900" href="/groups">
             Группы
           </Link>
         </nav>

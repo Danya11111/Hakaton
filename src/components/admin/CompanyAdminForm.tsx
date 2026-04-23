@@ -97,6 +97,13 @@ export function CompanyAdminForm({
   );
 
   useEffect(() => {
+    if (!groups.length) return;
+    if (!groups.some((g) => g.id === groupId)) {
+      setGroupId(groups[0]!.id);
+    }
+  }, [groups, groupId]);
+
+  useEffect(() => {
     if (!dirty) return;
     const fn = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -129,6 +136,10 @@ export function CompanyAdminForm({
   }
 
   const handleSave = () => {
+    if (!groups.length) {
+      toast.error("Нет групп в базе — сначала выполните seed или импорт.");
+      return;
+    }
     if (!csrf) {
       toast.error("Защита формы не готова. Подождите секунду и обновите страницу.");
       return;
@@ -227,24 +238,32 @@ export function CompanyAdminForm({
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label>Группа</Label>
-                <Select
-                  value={groupId}
-                  onValueChange={(v) => {
-                    setDirty(true);
-                    setGroupId(v);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите группу" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>
-                        {g.title} ({g.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {groups.length === 0 ? (
+                  <p className="rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
+                    В базе нет ни одной группы. Выполните{" "}
+                    <code className="rounded bg-white/80 px-1">npx prisma db seed</code> на сервере или импортируйте
+                    справочник.
+                  </p>
+                ) : (
+                  <Select
+                    value={groups.some((g) => g.id === groupId) ? groupId : groups[0]!.id}
+                    onValueChange={(v) => {
+                      setDirty(true);
+                      setGroupId(v);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите группу" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups.map((g) => (
+                        <SelectItem key={g.id} value={g.id}>
+                          {g.title} ({g.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">

@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:bootstrap-if-empty": "node scripts/bootstrap-if-empty.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -4,6 +4,8 @@ RUN apk add --no-cache libc6-compat openssl
 FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
+# postinstall runs `prisma generate` — schema must exist before npm ci
+COPY prisma ./prisma
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -23,6 +25,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts/bootstrap-if-empty.mjs ./scripts/bootstrap-if-empty.mjs
 COPY docker-entrypoint.sh /entrypoint.sh
 COPY docker-entrypoint.prod.sh /entrypoint.prod.sh
 RUN chmod +x /entrypoint.sh /entrypoint.prod.sh

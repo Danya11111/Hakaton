@@ -45,22 +45,30 @@ export default async function AdminCompaniesPage() {
               </tr>
             </thead>
             <tbody>
-              {companies.map((c) => (
-                <tr key={c.id} className="border-t border-slate-200/80">
-                  <td className="py-3 font-medium text-slate-900">{c.name}</td>
-                  <td className="py-3 text-slate-600">
-                    {c.group.title} ({c.group.code})
-                  </td>
-                  <td className="py-3 text-slate-600">{c.slug}</td>
-                  <td className="py-3">{formatNumber(c.totalAreaSqM, 1)} м²</td>
-                  <td className="py-3">{c.locationCount}</td>
-                  <td className="py-3 text-right">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/admin/companies/${c.id}`}>Изменить</Link>
-                    </Button>
+              {companies.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-sm text-slate-600">
+                    Пока нет компаний. Добавьте запись или выполните seed / импорт.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                companies.map((c) => (
+                  <tr key={c.id} className="border-t border-slate-200/80">
+                    <td className="py-3 font-medium text-slate-900">{c.name}</td>
+                    <td className="py-3 text-slate-600">
+                      {c.group.title} ({c.group.code})
+                    </td>
+                    <td className="py-3 text-slate-600">{c.slug}</td>
+                    <td className="py-3">{formatNumber(c.totalAreaSqM, 1)} м²</td>
+                    <td className="py-3">{c.locationCount}</td>
+                    <td className="py-3 text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/admin/companies/${c.id}`}>Изменить</Link>
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </CardContent>

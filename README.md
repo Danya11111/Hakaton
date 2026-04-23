@@ -4,7 +4,8 @@ MVP: Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui + Framer Motion
 
 ## Маршруты
 
-- `/` — главная: 5 карточек групп с количеством учреждений.
+- `/` — главная: карточки групп с количеством учреждений.
+- `/groups` — каталог всех групп (ссылки на `/groups/[groupSlug]`).
 - `/groups/[groupSlug]` — список компаний группы, поиск и сортировка.
 - `/companies/[companySlug]` — карточка учреждения, расчёт эффективности, сохранение оценок, история расчётов.
 
@@ -116,7 +117,11 @@ BASE_URL=https://arhipovdan.ru ./scripts/check-health.sh
 
 ## Продакшен (Docker + Caddy)
 
-Файлы: `docker-compose.prod.yml`, `ops/Caddyfile`, `docker-entrypoint.prod.sh` (миграции без seed; seed — `RUN_SEED_ON_DEPLOY=1`).
+Файлы: `docker-compose.prod.yml`, `ops/Caddyfile`, `docker-entrypoint.prod.sh`.
+
+**Порядок при старте контейнера `app`:** ожидание PostgreSQL → `npx prisma migrate deploy` → при `RUN_SEED_ON_DEPLOY=1` — `npx prisma db seed` → при `RUN_BOOTSTRAP_IF_EMPTY=1` — `node scripts/bootstrap-if-empty.mjs` (seed **только если** в БД нет ни одной группы; иначе выход без изменений) → `next start`. По умолчанию оба флага **выключены** (`0`), чтобы не выполнять seed на каждом рестарте.
+
+**Ручной цикл при пустой или новой базе:** после первого `up` при необходимости выполните в контейнере `npx prisma db seed` (или один раз выставьте `RUN_BOOTSTRAP_IF_EMPTY=1` в `.env.production`, пересоберите/перезапустите, затем верните в `0`). Проверка: `docker compose … exec app npx prisma studio` или SQL по таблице `Group`. После изменений данных перезапустите `app` при необходимости и проверьте `GET /api/health`.
 
 Первичная подготовка сервера: **`ops/BOOTSTRAP.md`** и краткий чеклист `ops/bootstrap-server.sh`.
 

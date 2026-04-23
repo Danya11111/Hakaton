@@ -50,6 +50,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --bui
 
 Миграции Prisma выполняются при старте контейнера `app` (`docker-entrypoint.prod.sh`). Дополнительно `scripts/deploy.sh` вызывает `prisma migrate deploy` в уже запущенном контейнере.
 
+**Данные (seed, не на каждый boot):** в `.env.production` по умолчанию `RUN_SEED_ON_DEPLOY=0` и `RUN_BOOTSTRAP_IF_EMPTY=0`. Для первичного наполнения либо один раз выполните `docker compose -f docker-compose.prod.yml --env-file .env.production exec app npx prisma db seed`, либо временно `RUN_BOOTSTRAP_IF_EMPTY=1`, поднимите стек, затем снова `0`. Подробнее — раздел «Продакшен» в корневом `README.md`.
+
 ## 6. Проверка
 
 ```bash

@@ -14,5 +14,10 @@ if [ "${RUN_SEED_ON_DEPLOY:-}" = "1" ]; then
   npx prisma db seed
 fi
 
+if [ "${RUN_BOOTSTRAP_IF_EMPTY:-}" = "1" ]; then
+  echo "RUN_BOOTSTRAP_IF_EMPTY=1: seed only if DB has zero groups…"
+  node scripts/bootstrap-if-empty.mjs
+fi
+
 echo "Starting Next.js..."
 exec npx next start -H 0.0.0.0 -p 3000

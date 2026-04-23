@@ -19,10 +19,19 @@ export function AdminCsrfProvider({
     void (async () => {
       try {
         const res = await fetch("/api/admin/session/bootstrap", { method: "POST", credentials: "include" });
-        const j = (await res.json()) as { csrf?: string };
-        if (!cancelled && j.csrf) setToken(j.csrf);
+        const ct = res.headers.get("content-type") ?? "";
+        let csrf: string | undefined;
+        if (ct.includes("application/json")) {
+          try {
+            const j = (await res.json()) as { csrf?: string };
+            csrf = typeof j.csrf === "string" ? j.csrf : undefined;
+          } catch {
+            /* non-JSON body despite header */
+          }
+        }
+        if (!cancelled && csrf) setToken(csrf);
       } catch {
-        /* ignore */
+        /* network / parse */
       }
     })();
     return () => {
