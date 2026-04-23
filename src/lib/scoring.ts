@@ -12,6 +12,8 @@ export interface AutoMetricsResult {
   attendancePer100m2: number;
   attendancePerStaff: number;
   coveragePct: number;
+  /** Group A: derived from childEventsCount / eventsCount */
+  childEventsSharePct?: number;
 }
 
 export function pickAutoMetric(auto: AutoMetricsResult, code: string): number | undefined {
@@ -22,6 +24,8 @@ export function pickAutoMetric(auto: AutoMetricsResult, code: string): number | 
       return auto.attendancePerStaff;
     case "coveragePct":
       return auto.coveragePct;
+    case "childEventsSharePct":
+      return auto.childEventsSharePct;
     default:
       return undefined;
   }
@@ -166,12 +170,38 @@ export function computeScoringForGroup(params: {
     merged[t.code] = v;
   }
 
+  if (params.groupCode === "A") {
+    const ec = merged.eventsCount;
+    const cec = params.values.childEventsCount;
+    if (cec !== undefined && Number.isFinite(cec)) {
+      merged.childEventsSharePct = ec > 0 ? (cec / ec) * 100 : 0;
+    } else {
+      const legacy = params.values.childEventsSharePct;
+      if (legacy !== undefined && Number.isFinite(legacy)) {
+        merged.childEventsSharePct = legacy;
+      } else {
+        return {
+          ok: false,
+          issues: [
+            { field: "childEventsCount", message: "Укажите количество детских мероприятий (целое неотрицательное число)." },
+          ],
+        };
+      }
+    }
+  }
+
+  const autoOut: AutoMetricsResult = { ...auto };
+  if (params.groupCode === "A" && merged.childEventsSharePct !== undefined) {
+    autoOut.childEventsSharePct = merged.childEventsSharePct;
+  }
+
   const blocks: ScoringBlock[] = ["RESULT", "EFFICIENCY", "QUALITY"];
   const breakdown: BlockBreakdown[] = [];
 
   for (const block of blocks) {
     const rows: MetricBreakdownRow[] = [];
     for (const t of templates.filter((x) => x.block === block)) {
+      if (t.includeInBreakdown === false) continue;
       const rawValue = merged[t.code];
       if (!Number.isFinite(rawValue)) {
         return {
@@ -207,7 +237,7 @@ export function computeScoringForGroup(params: {
 
   return {
     ok: true,
-    auto,
+    auto: autoOut,
     result: {
       resultScore,
       efficiencyScore,

@@ -27,6 +27,17 @@ function nonNegativeNumberString(label: string, max?: number) {
   return base;
 }
 
+function nonNegativeIntStringField(label: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, `Заполните поле «${label}».`)
+    .transform((s) => Number(s.replace(",", ".")))
+    .refine((n) => Number.isFinite(n), "Введите корректное число.")
+    .refine((n) => Number.isInteger(n), "Значение должно быть целым числом.")
+    .refine((n) => n >= 0, "Значение не может быть отрицательным.");
+}
+
 export function buildEvaluationFormSchema(groupCode: string) {
   const manual = getTemplatesForGroup(groupCode).filter((t) => !t.autoCalculated);
   const shape: Record<string, z.ZodTypeAny> = {
@@ -36,7 +47,9 @@ export function buildEvaluationFormSchema(groupCode: string) {
   };
 
   for (const t of manual) {
-    if (t.inputMode === "satisfaction") {
+    if (t.code === "childEventsCount") {
+      shape[t.code] = nonNegativeIntStringField(t.label);
+    } else if (t.inputMode === "satisfaction") {
       shape[t.code] = nonNegativeNumberString(t.label, 5);
     } else if (t.inputMode === "percent") {
       shape[t.code] = nonNegativeNumberString(t.label, 100);
@@ -45,7 +58,21 @@ export function buildEvaluationFormSchema(groupCode: string) {
     }
   }
 
-  return z.object(shape);
+  const base = z.object(shape);
+  if (groupCode === "A") {
+    return base.superRefine((data, ctx) => {
+      const ec = (data as Record<string, unknown>).eventsCount;
+      const cec = (data as Record<string, unknown>).childEventsCount;
+      if (typeof ec === "number" && typeof cec === "number" && ec > 0 && cec > ec) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["childEventsCount"],
+          message: "Детских мероприятий не может быть больше, чем мероприятий всего.",
+        });
+      }
+    });
+  }
+  return base;
 }
 
 export type EvaluationFormValues = z.infer<ReturnType<typeof buildEvaluationFormSchema>>;

@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { groupTemplatesByBlock } from "@/lib/scoring";
+import { migrateLegacyEvaluationForm } from "@/lib/evaluation-form-legacy";
 import { getTemplatesForGroup } from "@/lib/scoring-templates";
 import { formatNumber } from "@/lib/utils";
 
@@ -39,16 +40,21 @@ type EvalRow = {
   rawPayloadJson: unknown;
 };
 
-function rawToForm(raw: unknown): Record<string, string> {
+function rawToForm(raw: unknown, groupCode: string): Record<string, string> {
   if (!raw || typeof raw !== "object") return {};
   const o = raw as Record<string, unknown>;
-  const out: Record<string, string> = {};
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(o)) {
     if (k === "auto" || k === "values") continue;
     if (v === null || v === undefined) out[k] = "";
-    else out[k] = String(v);
+    else out[k] = v;
   }
-  return out;
+  migrateLegacyEvaluationForm(groupCode, out);
+  const strOut: Record<string, string> = {};
+  for (const [k, v] of Object.entries(out)) {
+    strOut[k] = v === null || v === undefined ? "" : String(v);
+  }
+  return strOut;
 }
 
 export function AdminEvaluationsPanel({
@@ -87,7 +93,7 @@ export function AdminEvaluationsPanel({
 
   function openEdit(ev: EvalRow) {
     setEditingId(ev.id);
-    setFields(rawToForm(ev.rawPayloadJson));
+    setFields(rawToForm(ev.rawPayloadJson, groupCode));
     setDialogOpen(true);
   }
 

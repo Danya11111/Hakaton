@@ -22,7 +22,7 @@ export default async function CompanyPage({ params }: PageProps) {
   if (!company) notFound();
 
   return (
-    <PageContainer className="space-y-10">
+    <PageContainer className="space-y-6 sm:space-y-8">
       <CompanyHero
         name={company.name}
         groupTitle={company.group.title}
@@ -32,12 +32,11 @@ export default async function CompanyPage({ params }: PageProps) {
         sourceOnlyInExcel={company.sourceOnlyInExcel}
       />
 
-      <section className="space-y-4">
+      <section className="space-y-3 sm:space-y-4" aria-label="Расчёт и аналитика">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-slate-900">Расчёт и история</h2>
-          <p className="text-sm text-slate-600">
-            Заполните показатели — расчёт выполняется сразу на вашем устройстве и повторно проверяется на сервере при
-            сохранении.
+          <h2 className="font-display text-xl font-semibold text-slate-900 sm:text-2xl">Нормирование и оценка</h2>
+          <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+            Введите фактические показатели. Расчёт на устройстве; при сохранении — проверка на сервере.
           </p>
         </div>
         <CriteriaForm
@@ -48,10 +47,10 @@ export default async function CompanyPage({ params }: PageProps) {
         />
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-2.5 border-t border-slate-200/60 pt-6" aria-label="История">
         <div>
-          <h3 className="font-display text-xl font-semibold text-slate-900">Последние сохранённые расчёты</h3>
-          <p className="text-sm text-slate-600">До 10 последних записей для этого учреждения.</p>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Сохранённые расчёты</h3>
+          <p className="text-xs text-slate-500">До 10 последних записей</p>
         </div>
         <LastEvaluationsList
           evaluations={company.evaluations.map((e) => ({

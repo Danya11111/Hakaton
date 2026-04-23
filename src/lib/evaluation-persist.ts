@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { buildEvaluationFormSchema } from "@/lib/criteria-schema";
+import { migrateLegacyEvaluationForm } from "@/lib/evaluation-form-legacy";
 import { computeScoringForGroup } from "@/lib/scoring";
 import { getTemplatesForGroup } from "@/lib/scoring-templates";
 
@@ -29,8 +30,10 @@ export type EvaluationPersistResult =
   | { ok: false; message: string; field?: string };
 
 export function persistEvaluationFromForm(input: EvaluationPersistInput): EvaluationPersistResult {
+  const form = { ...(input.form as Record<string, unknown>) };
+  migrateLegacyEvaluationForm(input.groupCode, form);
   const schema = buildEvaluationFormSchema(input.groupCode);
-  const parsed = schema.safeParse(input.form);
+  const parsed = schema.safeParse(form);
   if (!parsed.success) {
     const err = parsed.error.errors[0];
     return { ok: false, message: err?.message ?? "Ошибка валидации.", field: err?.path.join(".") };

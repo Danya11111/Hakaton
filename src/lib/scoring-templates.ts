@@ -13,6 +13,8 @@ export interface CriterionTemplate {
   inputMode: CriterionInputMode;
   helpText: string;
   autoCalculated: boolean;
+  /** If false, value is stored for formulas but omitted from the normalized score breakdown (e.g. intermediate counts). */
+  includeInBreakdown?: boolean;
 }
 
 export const SCORING_TEMPLATES: CriterionTemplate[] = [
@@ -55,6 +57,19 @@ export const SCORING_TEMPLATES: CriterionTemplate[] = [
   },
   {
     groupCode: "A",
+    block: "RESULT",
+    code: "childEventsCount",
+    label: "Детские мероприятия (кол-во)",
+    unit: "ед.",
+    benchmarkMax: 50,
+    weight: 0,
+    inputMode: "number",
+    helpText: "Сколько мероприятий из общего числа адресовано детской аудитории. Доля в % считается автоматически.",
+    autoCalculated: false,
+    includeInBreakdown: false,
+  },
+  {
+    groupCode: "A",
     block: "EFFICIENCY",
     code: "attendancePer100m2",
     label: "Посещаемость на 100 м²",
@@ -86,8 +101,8 @@ export const SCORING_TEMPLATES: CriterionTemplate[] = [
     benchmarkMax: 80,
     weight: 0.3,
     inputMode: "percent",
-    helpText: "Процент мероприятий для детской аудитории.",
-    autoCalculated: false,
+    helpText: "Авто: (детские мероприятия ÷ все мероприятия) × 100; при нуле мероприятий — 0%.",
+    autoCalculated: true,
   },
   {
     groupCode: "A",
